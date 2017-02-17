@@ -47,12 +47,11 @@ namespace DeusExExeNonSteam
                 }
             }
 
+            Process exeProcess = null;
+
             try
             {
-                using (Process exeProcess = Process.Start(GetSteamProcess(_args, steamData)))
-                {
-                    //exeProcess.WaitForExit();
-                }
+                exeProcess = Process.Start(GetSteamProcess(_args, steamData));
             }
             catch (Exception ignored)
             {
