@@ -15,6 +15,23 @@ namespace DeusExExeNonSteam
             _args = args;
         }
 
+        public void StartDeusEx()
+        {
+            try
+            {
+                string steamUrl = $"steam://rungameid/{6910}//-ini=";
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = steamUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
+        
         /// <summary>
         /// Launch the legacy application with some options set.
         /// </summary>
@@ -22,12 +39,58 @@ namespace DeusExExeNonSteam
         {
             string filename = "config.json";
             string pathWithFilename = Path.Combine(Directory.GetCurrentDirectory(), filename);
-            SteamData steamData = new SteamData();
-
+            
+            // steam://rungameid/6910//-ini="D:\SteamLibrary\steamapps\common\Deus Ex\CodenameNebula\System\CNN.ini" -userini="D:\SteamLibrary\steamapps\common\Deus Ex\CodenameNebula\System\CNNUser.ini"
+            
+            var steamData = new SteamData();
+            var currentDirectory = Directory.GetCurrentDirectory();
+            
+            // Old:
+            // var cnnIniFilePath = $"-ini=\"{Path.Combine(currentDirectory, "System\\CNN.ini")}\"";
+            // var cnnUserIniFilePath = $"-userini=\"{Path.Combine(currentDirectory, "System\\CNNUser.ini")}\"";
+            
+            var cnnIniFilePath = $"-ini=&quot;{Path.Combine(currentDirectory, "System\\CNN.ini")}&quot;";
+            var cnnUserIniFilePath = $"-userini=&quot;{Path.Combine(currentDirectory, "System\\CNNUser.ini")}";
+            
             // Default launch values:
-            steamData.steamPath = "C:\\program files (x86)\\steam\\steam.exe";
-            steamData.steamArgs = "-applaunch 397550";
+            string steamUrl = $"steam://rungameid/{6910}//";
+            steamData.steamPath = new StringBuilder()
+                .Append(steamUrl)
+                .Append(cnnIniFilePath)
+                .Append(" ")
+                .Append(cnnUserIniFilePath)
+                .ToString();
+            steamData.steamArgs = string.Empty;
 
+            var htmlRunnerFile = new StringBuilder()
+                    .AppendLine("<html>")
+                    .AppendLine("<body>")
+                    .AppendLine($"<a id=\"link\" target=\"_self\" href=\"{steamData.steamPath}\">Run Deus Ex</a>")
+                    .AppendLine("</body>")
+                    .AppendLine("<script>")
+                    .AppendLine("function LoadGame() {")
+                    .AppendLine("document.getElementById(\"link\").click();")
+                    .AppendLine("};")
+                    .AppendLine("window.onload = LoadGame();")
+                    .AppendLine("</script>")
+                    .AppendLine("</html>")
+                    .ToString();
+                       
+            string htmlRunnerFilename = Path.Combine(Directory.GetCurrentDirectory(), "PlayCNNSteam.html");
+            File.WriteAllText(htmlRunnerFilename, htmlRunnerFile);
+            
+            try
+            {
+                Process.Start(htmlRunnerFilename);
+                // Process.Start(GetSteamProcess(_args, steamData));
+                // Process.Start(steamData.steamPath);
+            }
+            catch (Exception ignored)
+            {
+                Console.WriteLine(ignored.Message);
+            }
+            
+            /*
             // If config file doesn't exists, than create one.
             if (!File.Exists(pathWithFilename))
             {
@@ -47,18 +110,18 @@ namespace DeusExExeNonSteam
                 }
             }
 
-            Process exeProcess = null;
-
             try
             {
-                exeProcess = Process.Start(GetSteamProcess(_args, steamData));
+                // Process.Start(GetSteamProcess(_args, steamData));
+                Process.Start(steamData.steamPath);
             }
             catch (Exception ignored)
             {
                 Console.WriteLine(ignored.Message);
             }
+            */
         }
-
+        
         private void GenerateConfigFile(SteamData steamData, string pathWithFilename)
         {
             try
@@ -74,24 +137,11 @@ namespace DeusExExeNonSteam
 
         private ProcessStartInfo GetSteamProcess(string[] args, SteamData steamData)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.CreateNoWindow = false;
-            startInfo.UseShellExecute = false;
-            startInfo.FileName = steamData.steamPath;
-            startInfo.Arguments = steamData.steamArgs;
-            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-            if (args != null)
+            return new ProcessStartInfo
             {
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < args.Length; i++)
-                {
-                    sb.Append(" " + args[i] + " ");
-                }
-                startInfo.Arguments += sb.ToString().TrimEnd();
-            }
-
-            return startInfo;
+                UseShellExecute = true,
+                FileName = steamData.steamPath,
+            };
         }
     }
 }
